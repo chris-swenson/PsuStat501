@@ -301,7 +301,7 @@ library(car)</code></pre>
 <pre><code>## Loading required package: carData</code></pre>
 <pre class="r"><code>dwt(model.1)</code></pre>
 <pre><code>##  lag Autocorrelation D-W Statistic p-value
-##    1       0.6260046     0.7347256   0.002
+##    1       0.6260046     0.7347256       0
 ##  Alternative hypothesis: rho != 0</code></pre>
 <pre class="r"><code># lag Autocorrelation D-W Statistic p-value
 #   1       0.6260046     0.7347256       0
@@ -355,7 +355,7 @@ summary(model.2)</code></pre>
  
 dwt(model.2)</code></pre>
 <pre><code>##  lag Autocorrelation D-W Statistic p-value
-##    1       0.1473569      1.650248   0.306
+##    1       0.1473569      1.650248   0.312
 ##  Alternative hypothesis: rho != 0</code></pre>
 <pre class="r"><code># lag Autocorrelation D-W Statistic p-value
 #   1       0.1473569      1.650248   0.306
@@ -408,7 +408,7 @@ summary(model.3)</code></pre>
  
 dwt(model.3)</code></pre>
 <pre><code>##  lag Autocorrelation D-W Statistic p-value
-##    1        0.116145      1.725439   0.602
+##    1        0.116145      1.725439   0.574
 ##  Alternative hypothesis: rho != 0</code></pre>
 <pre class="r"><code># lag Autocorrelation D-W Statistic p-value
 #   1        0.116145      1.725439   0.548
@@ -425,7 +425,7 @@ y.fd = y.ts-lag1y
 x.fd = x.ts-lag1x
 dwt(lm(y.fd ~ x.fd))</code></pre>
 <pre><code>##  lag Autocorrelation D-W Statistic p-value
-##    1       0.1160548      1.748834   0.628
+##    1       0.1160548      1.748834   0.626
 ##  Alternative hypothesis: rho != 0</code></pre>
 <pre class="r"><code># lag Autocorrelation D-W Statistic p-value
 #   1       0.1160548      1.748834    0.62

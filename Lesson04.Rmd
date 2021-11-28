@@ -2,7 +2,9 @@
 title: "Lesson 04"
 author: "Christopher A. Swenson (chris@cswenson.com)"
 date: "11/27/2021"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -418,8 +420,8 @@ Load the carstopping data.
 Fit a simple linear regression model with y = Distance and x = Speed.
 Display a scatterplot of the data with the simple linear regression line.
 Display a residual plot with fitted values on the horizontal axis.
-Create a new response variable equal to √Distance
-Fit a simple linear regression model with y = √Distance and x = Speed.
+Create a new response variable equal to sqrt(Distance)
+Fit a simple linear regression model with y = sqrt(Distance) and x = Speed.
 Display a scatterplot of the data with the simple linear regression line.
 Display a residual plot with fitted values on the horizontal axis.
 Use the model to predict Distance for Speed = 10, 20, 30, and 40.

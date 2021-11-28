@@ -1,0 +1,238 @@
+---
+title: "Lesson 14"
+author: "Christopher A. Swenson (chris@cswenson.com)"
+date: "11/27/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Google stock (autoregression model)
+Use the read.zoo function in the zoo package to load the google_stock data in time series format.
+Create a time series plot of the data.
+Load the google_stock data in the usual way using read-table.
+Use the ts function to convert the price variable to a time series.
+Create a plot of partial autocorrelations of price.
+Calculate a lag-1 price variable (note that the lag argument for the function is –1, not +1).
+Create a scatterplot of price vs lag1price.
+Use the ts.intersect function to create a dataframe containing price and lag1price.
+Fit a simple linear regression model of price vs lag1price (a first-order autoregression model).
+```{r google}
+library(zoo)
+google.ts <- read.zoo("./Data/google_stock.txt", format="%m/%d/%Y",
+                      header=T)
+plot(google.ts)
+ 
+google <- read.table("./Data/google_stock.txt", header=T)
+attach(google)
+ 
+price.ts <- ts(price)
+pacf(price.ts)
+ 
+lag1price <- lag(price.ts, -1)
+plot(price.ts ~ lag1price, xy.labels=F)
+ 
+lagdata <- ts.intersect(price.ts, lag1price, dframe=T)
+summary(lm(price.ts ~ lag1price, data=lagdata))
+ 
+detach(google)
+```
+
+## Earthquakes (autoregression model)
+Load the earthquakes data.
+Create a time series plot of the data.
+Use the ts function to convert the Quakes variable to a time series.
+Create a plot of partial autocorrelations of Quakes.
+Calculate lag-1, lag-2, and lag-3 Quakes variables.
+Use the ts.intersect function to create a dataframe containing Quakes and the three lag variables.
+Fit a multiple linear regression model of Quakes versus the three lag variables (a third-order autoregression model).
+```{r earth}
+earthquakes <- read.table("./Data/earthquakes.txt", header=T)
+attach(earthquakes)
+ 
+plot(Year, Quakes, type="b")
+ 
+Quakes.ts <- ts(Quakes)
+pacf(Quakes.ts)
+ 
+lag1Quakes <- lag(Quakes.ts, -1)
+lag2Quakes <- lag(Quakes.ts, -2)
+lag3Quakes <- lag(Quakes.ts, -3)
+ 
+lagdata <- ts.intersect(Quakes.ts, lag1Quakes, lag2Quakes, lag3Quakes, dframe=T)
+summary(lm(Quakes.ts ~ lag1Quakes + lag2Quakes + lag3Quakes, data=lagdata))
+#             Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)  6.44916    1.78646   3.610 0.000496 ***
+# lag1Quakes   0.16424    0.10063   1.632 0.106049    
+# lag2Quakes   0.07125    0.10128   0.703 0.483517    
+# lag3Quakes   0.26928    0.09783   2.753 0.007110 ** 
+# ---
+# Residual standard error: 3.851 on 93 degrees of freedom
+# Multiple R-squared:  0.1388,  Adjusted R-squared:  0.111 
+# F-statistic: 4.997 on 3 and 93 DF,  p-value: 0.002942
+ 
+detach(earthquakes)
+```
+
+## Blaisdell company (regression with autoregressive errors)
+Load the blaisdell data.
+Fit a simple linear regression model of comsales vs indsales.
+Use the dwt function in the car package to conduct the Durbin-Watson test on the residuals.
+Conduct the Ljung-Box test on the residuals.
+Perform the Cochrane-Orcutt procedure to transform the variables.
+Forecast comsales for period 21 when indsales are projected to be $175.3 million.
+Perform the Hildreth-Lu procedure to transform the variables.
+Perform the first differences procedure to transform the variables.
+```{r blaisdell}
+blaisdell <- read.table("./Data/blaisdell.txt", header=T)
+attach(blaisdell)
+ 
+model.1 <- lm(comsales ~ indsales)
+summary(model.1)
+#              Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) -1.454750   0.214146  -6.793 2.31e-06 ***
+# indsales     0.176283   0.001445 122.017  < 2e-16 ***
+ 
+# Durbin-Watson Test
+library(car)
+dwt(model.1)
+# lag Autocorrelation D-W Statistic p-value
+#   1       0.6260046     0.7347256       0
+# Alternative hypothesis: rho != 0
+ 
+# Ljung-Box Q Test
+Box.test(residuals(model.1), lag = 1, type = "Ljung")
+# Box-Ljung test
+# data:  residuals(model.1)
+# X-squared = 9.0752, df = 1, p-value = 0.002591
+ 
+# Cochrane-Orcutt Procedure
+res.ts <- ts(residuals(model.1))
+lag1res <- lag(res.ts, -1)
+lagdata1 <- ts.intersect(res.ts, lag1res)
+acp <- coef(lm(res.ts ~ lag1res -1, data=lagdata1)) # 0.6311636
+y.ts <- ts(comsales)
+x.ts <- ts(indsales)
+lag1y <- lag(y.ts, -1)
+lag1x <- lag(x.ts, -1)
+y.co <- y.ts-acp*lag1y
+x.co <- x.ts-acp*lag1x
+model.2 <- lm(y.co ~ x.co)
+summary(model.2)
+#              Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) -0.394111   0.167230  -2.357   0.0307 *  
+# x.co         0.173758   0.002957  58.767   <2e-16 ***
+ 
+dwt(model.2)
+# lag Autocorrelation D-W Statistic p-value
+#   1       0.1473569      1.650248   0.306
+# Alternative hypothesis: rho != 0
+ 
+b0 <- coef(model.2)[1]/(1-acp) # -1.068524
+sqrt(vcov(model.2)[1,1])/(1-acp) # se = 0.4533986
+b1 <- coef(model.2)[2] # 0.1737583
+ 
+fit.20 <- b0+b1*indsales[20] # 28.76577
+res.20 <- comsales[20]-fit.20 # 0.01422919
+fit.21 <- b0+b1*175.3 # 29.3913
+forecast.21 <- fit.21+acp*res.20 # 29.40028
+ 
+# Hildreth-Lu Procedure
+sse <- vector()
+for(i in 1:90){
+  y.hl = y.ts-(0.09+0.01*i)*lag1y
+  x.hl = x.ts-(0.09+0.01*i)*lag1x
+  sse[i] <- sum(residuals(lm(y.hl ~ x.hl))^2)
+}
+acp <- 0.09+0.01*which.min(sse) # 0.96
+y.hl = y.ts-acp*lag1y
+x.hl = x.ts-acp*lag1x
+model.3 <- lm(y.hl ~ x.hl)
+summary(model.3)
+#             Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)  0.07117    0.05797   1.228    0.236    
+# x.hl         0.16045    0.00684  23.458 2.18e-14 ***
+ 
+dwt(model.3)
+# lag Autocorrelation D-W Statistic p-value
+#   1        0.116145      1.725439   0.548
+# Alternative hypothesis: rho != 0
+ 
+coef(model.3)[1]/(1-acp) # 1.77933
+sqrt(vcov(model.3)[1,1])/(1-acp) # 1.449373
+ 
+# First Differences Procedure
+ 
+y.fd = y.ts-lag1y
+x.fd = x.ts-lag1x
+dwt(lm(y.fd ~ x.fd))
+# lag Autocorrelation D-W Statistic p-value
+#   1       0.1160548      1.748834    0.62
+# Alternative hypothesis: rho != 0
+ 
+model.4 <- lm(y.fd ~ x.fd -1)
+summary(model.4)
+#      Estimate Std. Error t value Pr(>|t|)    
+# x.fd 0.168488   0.005096   33.06   <2e-16 ***
+ 
+mean(comsales)-coef(model.4)[1]*mean(indsales) # -0.3040052
+ 
+detach(blaisdell)
+```
+
+## Metal fabricator and vendor employees (regression with autoregressive errors)
+Load the employee data.
+Fit a simple linear regression model of metal vs vendor.
+Create a scatterplot of the data with a regression line.
+Create a scatterplot of the residuals vs time order.
+Create a plot of partial autocorrelations of the residuals.
+Use the dwt function in the car package to conduct the Durbin-Watson test on the residuals.
+Perform the Cochrane-Orcutt procedure to transform the variables.
+```{r metal}
+employee <- read.table("./Data/employee.txt", header=T)
+attach(employee)
+ 
+model.1 <- lm(metal ~ vendor)
+summary(model.1)
+#             Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) 2.847911   3.299962   0.863    0.392    
+# vendor      0.122442   0.009423  12.994   <2e-16 ***
+ 
+plot(x=vendor, y=metal,
+     panel.last = lines(sort(vendor), fitted(model.1)[order(vendor)]))
+ 
+plot(x=time, y=residuals(model.1), type="b",
+     panel.last = abline(h=0, lty=2))
+ 
+pacf(residuals(model.1))
+ 
+# Durbin-Watson Test
+dwt(model.1)
+# lag Autocorrelation D-W Statistic p-value
+#   1        0.772038     0.3592396       0
+# Alternative hypothesis: rho != 0
+ 
+# Cochrane-Orcutt Procedure
+res.ts <- ts(residuals(model.1))
+lag1res <- lag(res.ts, -1)
+lagdata1 <- ts.intersect(res.ts, lag1res)
+acp <- coef(lm(res.ts ~ lag1res -1, data=lagdata1)) # 0.831385
+y.ts <- ts(metal)
+x.ts <- ts(vendor)
+lag1y <- lag(y.ts, -1)
+lag1x <- lag(x.ts, -1)
+y.co <- y.ts-acp*lag1y
+x.co <- x.ts-acp*lag1x
+model.2 <- lm(y.co ~ x.co)
+summary(model.2)
+#             Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)  4.87560    0.78655   6.199 6.78e-08 ***
+# x.co         0.04795    0.01300   3.688 0.000505 ***
+ 
+coef(model.2)[1]/(1-acp) # 28.91557
+sqrt(vcov(model.2)[1,1])/(1-acp) # se = 4.664789
+ 
+detach(employee)
+```

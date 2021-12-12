@@ -23,22 +23,32 @@ Use the ts.intersect function to create a dataframe containing price and lag1pri
 Fit a simple linear regression model of price vs lag1price (a first-order autoregression model).
 ```{r google}
 library(zoo)
-google.ts <- read.zoo("./Data/google_stock.txt", format="%m/%d/%Y",
-                      header=T)
-plot(google.ts)
+google.ts <- read.zoo("./Data/google_stock.txt", format="%m/%d/%Y", header=T)
+
+plot(google.ts, main='Google Stocks')
  
 google <- read.table("./Data/google_stock.txt", header=T)
 attach(google)
- 
+
+# create time series from price
 price.ts <- ts(price)
-pacf(price.ts)
- 
+
+# computes estimates of partial autocorrelation function
+pacf(price.ts, main='')
+
+# create lagged price (lag of 1 period)
 lag1price <- lag(price.ts, -1)
+
+# compare price with lagged price
 plot(price.ts ~ lag1price, xy.labels=F)
  
+# intersection of two time series
+# combine both keeping only common periods
 lagdata <- ts.intersect(price.ts, lag1price, dframe=T)
+
+# estimate the regression using OLS
 summary(lm(price.ts ~ lag1price, data=lagdata))
- 
+
 detach(google)
 ```
 
@@ -53,18 +63,26 @@ Fit a multiple linear regression model of Quakes versus the three lag variables 
 ```{r earth}
 earthquakes <- read.table("./Data/earthquakes.txt", header=T)
 attach(earthquakes)
- 
+
 plot(Year, Quakes, type="b")
- 
+
+# create time series from quakes 
 Quakes.ts <- ts(Quakes)
+
+# display the partial autocorrelation
 pacf(Quakes.ts)
  
+# create lags of 1, 2, 3
 lag1Quakes <- lag(Quakes.ts, -1)
 lag2Quakes <- lag(Quakes.ts, -2)
 lag3Quakes <- lag(Quakes.ts, -3)
  
+# merge quakes and lagged quakes keeping only those in common
 lagdata <- ts.intersect(Quakes.ts, lag1Quakes, lag2Quakes, lag3Quakes, dframe=T)
-summary(lm(Quakes.ts ~ lag1Quakes + lag2Quakes + lag3Quakes, data=lagdata))
+
+# estimate regression with OLS
+quake_model <- lm(Quakes.ts ~ lag1Quakes + lag2Quakes + lag3Quakes, data=lagdata)
+summary(quake_model)
 #             Estimate Std. Error t value Pr(>|t|)    
 # (Intercept)  6.44916    1.78646   3.610 0.000496 ***
 # lag1Quakes   0.16424    0.10063   1.632 0.106049    
@@ -74,7 +92,9 @@ summary(lm(Quakes.ts ~ lag1Quakes + lag2Quakes + lag3Quakes, data=lagdata))
 # Residual standard error: 3.851 on 93 degrees of freedom
 # Multiple R-squared:  0.1388,  Adjusted R-squared:  0.111 
 # F-statistic: 4.997 on 3 and 93 DF,  p-value: 0.002942
- 
+
+anova(quake_model)
+
 detach(earthquakes)
 ```
 
